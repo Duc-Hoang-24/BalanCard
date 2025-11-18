@@ -113,8 +113,8 @@ export default function CoreLearning() {
     
     if (!question.trim()) {
       errors.question = 'Question is required';
-    } else if (question.trim().length < 3) {
-      errors.question = 'Question must be at least 3 characters';
+    } else if (question.trim().length < 1) {
+      errors.question = 'Question must be at least 1 character';
     }
     
     if (!answer.trim()) {
@@ -354,7 +354,6 @@ export default function CoreLearning() {
     } catch (err) {
       console.error('Image search error:', err);
       setSearchResults([]);
-      showToast('Failed to search images. Please try again.', 'error');
     } finally {
       setIsSearching(false);
     }
@@ -909,4 +908,5 @@ export default function CoreLearning() {
       </div>
     </div>
   );
+
 }
