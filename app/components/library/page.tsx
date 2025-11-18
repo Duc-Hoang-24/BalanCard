@@ -327,11 +327,18 @@ export default function LibraryPage() {
                         <> • Updated {new Date(set.updatedAt).toLocaleDateString()}</>
                       )}
                     </span>
-                    <button 
-                      onClick={() => handleView(set.id)}
-                      className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-lg font-medium transition-all transform hover:scale-105">
-                      👀 View & Edit
-                    </button>
+                    <div className='grid grid-cols-1 gap-1'>
+                      <Link 
+                      href='/components/study'
+                      className='bg-emerald-500 hover:bg-emerald-600 text-gray-700 p-2 rounded-lg font-medium transition-all transform hover:scale-105 text-center'>
+                        🧠 Study
+                      </Link>
+                      <button 
+                        onClick={() => handleView(set.id)}
+                        className="bg-blue-400 hover:bg-blue-500 text-gray-700 p-2 rounded-lg font-medium transition-all transform hover:scale-105">
+                        👀 View & Edit
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -389,4 +396,5 @@ export default function LibraryPage() {
       </div>
     </>
   );
+
 }
