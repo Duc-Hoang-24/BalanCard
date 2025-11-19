@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Feature from './function';
+import {
+  getFlashcards,
+  saveFlashcardSet
+} from '../../utils/flashcardSync'
 
 // Types
 type FlashcardSet = {
@@ -34,22 +38,6 @@ type FormErrors = {
   answer?: string;
 };
 
-const getFlashcards = (): Flashcard[] => {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('flashcards');
-    return stored ? JSON.parse(stored) : [];
-  }
-  return [];
-};
-
-const saveFlashcards = (flashcards: Flashcard[]) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('flashcards', JSON.stringify(flashcards));
-  }
-};
-
-let flashcards: Flashcard[] = [];
-
 export default function CoreLearning() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,26 +68,24 @@ export default function CoreLearning() {
 
   // Load flashcards and handle edit mode
   useEffect(() => {
-    flashcards = getFlashcards();
-    setFlashcardsState([...flashcards]);
-    
-    // If edit ID is provided, find and load the card for editing
-    if (editId) {
-      const cardToEdit = flashcards.find(card => card.id === editId);
-      if (cardToEdit) {
-        startEditing(cardToEdit);
-      } else {
-        // Card not found, redirect to regular create mode
-        router.replace('/components/flashcard');
+    const loadData = async () => {
+      if (editId) {
+        const allSets = await getFlashcards();
+        const cardToEdit = allSets.find(set => set.id === editId);
+
+        if (cardToEdit) {
+          setTitle(cardToEdit.title);
+          setDescription(cardToEdit.description || '');
+          setCards(cardToEdit.cards);
+          setIsEditing(true);
+          setIsEditingSet(true);
+        } else {
+          router.replace('/components/flashcard');
+        }
       }
     }
+    loadData();
   }, [editId, router]);
-
-  // Utility functions
-  const revalidateFlashcards = useCallback(() => {
-    setFlashcardsState([...flashcards]);
-    saveFlashcards(flashcards); // Persist to localStorage
-  }, []);
 
   const resetForm = useCallback(() => {
     setSelectedImageUrl(null);
@@ -195,56 +181,31 @@ export default function CoreLearning() {
 
       setIsSubmitting(true);
       try {
-        const sets = JSON.parse(localStorage.getItem('flashcardSets') || '[]');
         const isEditingMode = localStorage.getItem('isEditingMode') === 'true';
         const editingSetId = localStorage.getItem('editingSetId'); // Get the specific ID
         
-        if (isEditingMode && editingSetId) {
-          // UPDATE existing set - use the stored ID
-          const updatedSets = sets.map((set: FlashcardSet) => 
-            set.id === editingSetId 
-              ? {
-                  ...set,
-                  title: title.trim(),
-                  description: description.trim() || '',
-                  cards,
-                  updatedAt: new Date().toISOString(),
-                }
-              : set
-          );
-          
-          // Check if the set was actually found and updated
-          const setWasUpdated = updatedSets.some((set: FlashcardSet) => 
-            set.id === editingSetId && set.title === title.trim()
-          );
-          
-          if (setWasUpdated) {
-            localStorage.setItem('flashcardSets', JSON.stringify(updatedSets));
-            localStorage.removeItem('isEditingMode');
-            localStorage.removeItem('editingSetId');
-            localStorage.removeItem('viewingSet');
-          } else {
-            throw new Error('Failed to find set to update');
-          }
-        } else {
-          // CREATE new set
-          const newSet = {
-            id: Date.now().toString(),
-            title: title.trim(),
-            description: description.trim() || '',
-            cards,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          sets.push(newSet);
-          localStorage.setItem('flashcardSets', JSON.stringify(sets));
-        }
-        
-        // Navigate back to library
+        const now = new Date();
+        const flashcardSetData = {
+          id: isEditingMode && editingSetId ? editingSetId : Date.now().toString(),
+          title: title.trim(),
+          description: description.trim() || '',
+          cards: cards,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        await saveFlashcardSet(flashcardSetData);
+        console.log('Successfully saved flashcard set');
+
+        localStorage.removeItem('isEditingMode');
+        localStorage.removeItem('editingSetId');
+        localStorage.removeItem('viewingSet');
+
         router.push('/components/library');
       } catch (error) {
-        console.error('Error saving flashcard set:', error);
-        alert('Failed to save flashcard set. Please try again.');
+        console.error('Error saving flashcard sset:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        alert(`Failed to save flashcard set: ${errorMessage}\n\nPlease check your internet connection and try again.`)
       } finally {
         setIsSubmitting(false);
       }
@@ -269,71 +230,6 @@ export default function CoreLearning() {
         setIsEditingSet(false);
       }
     }, []);
-
-
-  // CRUD operations
-  const handleSaveFlashcard = async (formData: FormData) => {
-    setIsSubmitting(true);
-    
-    try {
-      const question = (formData.get('question') as string).trim();
-      const answer = (formData.get('answer') as string).trim();
-      const imageUrl = selectedImageUrl?.trim() || undefined;
-      
-      // Use raw values for validation
-      const rawQuestionLang = logic.selectedLanguageQuestion || 'none';
-      const rawAnswerLang = logic.selectedLanguageAnswer || 'none';
-
-      const errors = validateForm(question, answer, rawQuestionLang, rawAnswerLang);
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
-        return;
-      }
-
-      // Normalize for storage
-      const questionLang = normalizeLanguage(logic.selectedLanguageQuestion);
-      const answerLang = normalizeLanguage(logic.selectedLanguageAnswer);
-
-      const now = new Date();
-      const id = formData.get('id') as string | null;
-
-      if (id) {
-        flashcards = flashcards.map(card =>
-          card.id === id
-            ? { ...card, question, answer, imageUrl, questionLanguage: questionLang, answerLanguage: answerLang, updatedAt: now }
-            : card
-        );
-      } else {
-        const newCard: Flashcard = {
-          id: Date.now().toString(),
-          question,
-          answer,
-          imageUrl,
-          createdAt: now,
-          updatedAt: now,
-          questionLanguage: questionLang,
-          answerLanguage: answerLang,
-        };
-        flashcards.push(newCard);
-      }
-
-      resetForm();
-      revalidateFlashcards();
-      router.push('/components/library');
-    } catch (error) {
-      console.error('Error saving flashcard:', error);
-      showToast('Failed to save flashcard. Please try again.', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const startEditing = useCallback((card: Flashcard) => {
-    setCurrentCard(card);
-    setSelectedImageUrl(card.imageUrl || null);
-    setIsEditing(true);
-    setFormErrors({});
-  }, []);
 
   const searchImages = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -371,10 +267,6 @@ export default function CoreLearning() {
 
     return () => clearTimeout(timer);
   }, [searchQuery, searchImages]);
-
-  const showToast = (message: string, type: 'error' ) => {
-    alert(message);
-  };
 
   const handleImageSelect = (imageUrl: string) => {
   setSelectedImageUrl(imageUrl);
@@ -908,5 +800,4 @@ export default function CoreLearning() {
       </div>
     </div>
   );
-
 }
