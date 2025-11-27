@@ -106,7 +106,14 @@ export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
         createdAt: Timestamp.fromDate(set.createdAt),
         updatedAt: Timestamp.fromDate(new Date()),
         cards: set.cards.map(card => {
-          const cleanCard: any = {
+          const cleanCard: {
+            id: string;
+            question: string;
+            answer: string;
+            imageUrl?: string;
+            createdAt: Timestamp;
+            updatedAt: Timestamp;
+          } = {
             id: card.id,
             question: card.question,
             answer: card.answer,
