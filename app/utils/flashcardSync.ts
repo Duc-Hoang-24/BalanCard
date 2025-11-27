@@ -100,16 +100,26 @@ export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
     // Save to Firestore
     try {
       const setRef = doc(db, 'users', user.uid, 'sets', set.id);
-      await setDoc(setRef, {
-        ...set,
+      const cleanSet = {
+        title: set.title,
+        ...(set.description !== undefined && { description: set.description }),
         createdAt: Timestamp.fromDate(set.createdAt),
         updatedAt: Timestamp.fromDate(new Date()),
-        cards: set.cards.map(card => ({
-          ...card,
-          createdAt: Timestamp.fromDate(card.createdAt),
-          updatedAt: Timestamp.fromDate(card.updatedAt)
-        }))
-      });
+        cards: set.cards.map(card => {
+          const cleanCard: any = {
+            id: card.id,
+            question: card.question,
+            answer: card.answer,
+            createdAt: Timestamp.fromDate(card.createdAt),
+            updatedAt: Timestamp.fromDate(card.updatedAt),
+          };
+          if (card.imageUrl !== undefined) {
+            cleanCard.imageUrl = card.imageUrl;
+          }
+          return cleanCard;
+        })
+      };
+      await setDoc(setRef, cleanSet);
     } catch (error) {
       console.error('Error saving to Firestore:', error);
       throw error;
