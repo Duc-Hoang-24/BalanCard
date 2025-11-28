@@ -146,7 +146,7 @@ export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
             id: card.id,
             question: card.question,
             answer: card.answer,
-            createdAt: toTimestamp(card.createdAt),
+            createdAt: Timestamp.fromDate(card.createdAt),
             updatedAt: toTimestamp(card.updatedAt),
           };
           if (card.imageUrl !== undefined) {
@@ -237,3 +237,4 @@ export const migrateLocalDataToFirestore = async (): Promise<void> => {
     }
   }
 };
+
