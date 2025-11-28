@@ -320,14 +320,7 @@ export default function LibraryPage() {
                       )}
                   </div>
 
-                  <div className="text-xs flex flex-row justify-between items-center w-full">
-                    <span className="text-gray-500">
-                      Created {new Date(set.createdAt).toLocaleDateString()}
-                      {set.updatedAt !== set.createdAt && (
-                        <> • Updated {new Date(set.updatedAt).toLocaleDateString()}</>
-                      )}
-                    </span>
-                    <div className='grid grid-cols-1 gap-1'>
+                    <div className='grid grid-cols-2 gap-1'>
                       <Link 
                       href='/components/study'
                       className='bg-emerald-500 hover:bg-emerald-600 text-gray-700 p-2 rounded-lg font-medium transition-all transform hover:scale-105 text-center'>
@@ -339,7 +332,6 @@ export default function LibraryPage() {
                         👀 View & Edit
                       </button>
                     </div>
-                  </div>
                 </div>
               </div>
             ))}
@@ -396,5 +388,4 @@ export default function LibraryPage() {
       </div>
     </>
   );
-
 }
