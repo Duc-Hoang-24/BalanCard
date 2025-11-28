@@ -92,6 +92,36 @@ export const getFlashcards = async (): Promise<FlashcardSet[]> => {
   }
 };
 
+const toTimestamp = (date: Date | Timestamp | string | unknown): Timestamp => {
+  // If it's already a Firestore Timestamp, return it
+  if (date && typeof date === 'object' && 'toDate' in date && 'seconds' in date) {
+    return date as Timestamp;
+  }
+  
+  // Convert to Date, handling various input types
+  let dateObj: Date;
+  
+  if (date instanceof Date) {
+    dateObj = date;
+  } else if (typeof date === 'string' || typeof date === 'number') {
+    dateObj = new Date(date);
+  } else if (date && typeof date === 'object') {
+    // Handle any object that might be date-like
+    dateObj = new Date(date.toString());
+  } else {
+    // Fallback to current date
+    dateObj = new Date();
+  }
+  
+  // Verify we have a valid date before calling Timestamp.fromDate
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date value, using current date:', date);
+    dateObj = new Date();
+  }
+  
+  return Timestamp.fromDate(dateObj);
+};
+
 // Save a flashcard set
 export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
   const user = auth.currentUser;
@@ -103,7 +133,7 @@ export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
       const cleanSet = {
         title: set.title,
         ...(set.description !== undefined && { description: set.description }),
-        createdAt: Timestamp.fromDate(set.createdAt),
+        createdAt: toTimestamp(set.createdAt),
         updatedAt: Timestamp.fromDate(new Date()),
         cards: set.cards.map(card => {
           const cleanCard: {
@@ -117,8 +147,8 @@ export const saveFlashcardSet = async (set: FlashcardSet): Promise<void> => {
             id: card.id,
             question: card.question,
             answer: card.answer,
-            createdAt: Timestamp.fromDate(card.createdAt),
-            updatedAt: Timestamp.fromDate(card.updatedAt),
+            createdAt: toTimestamp(card.createdAt),
+            updatedAt: toTimestamp(card.updatedAt),
           };
           if (card.imageUrl !== undefined) {
             cleanCard.imageUrl = card.imageUrl;
