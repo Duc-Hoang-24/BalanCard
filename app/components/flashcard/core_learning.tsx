@@ -419,7 +419,7 @@ export default function CoreLearning() {
                       {/* Language Selector */}
                       <div className='absolute w-full top-25 left-30'>
                         <div className='relative flex items-center grid-cols-[1fr_auto] gap-2'>
-                          <p className='block text-sm font-bold'>Select a language: </p>
+                          <p className='block text-sm font-bold text-white'>Select a language: </p>
                           <div className='relative'>
                             <select
                               size={logic.isQuestionDropdownOpen ? 6 : 1}
@@ -523,7 +523,7 @@ export default function CoreLearning() {
                       {/* Language Selector */}
                       <div className='absolute w-full top-25 left-80'>
                         <div className='relative flex items-center grid-cols-[1fr_auto] gap-2'>
-                          <p className='text-sm font-bold'>Select a language: </p>
+                          <p className='text-sm font-bold text-white'>Select a language: </p>
                           <div className='relative'>
                             <select
                               size={logic.isAnswerDropdownOpen ? 6 : 1}
@@ -801,3 +801,4 @@ export default function CoreLearning() {
     </div>
   );
 }
+
