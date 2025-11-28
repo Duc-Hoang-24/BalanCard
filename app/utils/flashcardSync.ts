@@ -109,14 +109,13 @@ const toTimestamp = (date: Date | Timestamp | string | unknown): Timestamp => {
     // Handle any object that might be date-like
     dateObj = new Date(date.toString());
   } else {
-    // Fallback to current date
-    dateObj = new Date();
+    // This should never happen with proper typing, but throw error to catch bugs
+    throw new Error(`Cannot convert to Timestamp: invalid date value ${date}`);
   }
   
   // Verify we have a valid date before calling Timestamp.fromDate
   if (isNaN(dateObj.getTime())) {
-    console.warn('Invalid date value, using current date:', date);
-    dateObj = new Date();
+    throw new Error(`Cannot convert to Timestamp: invalid date value ${date}`);
   }
   
   return Timestamp.fromDate(dateObj);
